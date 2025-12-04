@@ -1,6 +1,7 @@
 import { runLLM } from './llm'
-import { addMessages, getMessages } from './memory'
+import { addMessages, getMessages, saveToolResponse } from './memory'
 import { logMessage, showLoader } from './ui'
+import { runTool } from './toolRunner'
 
 export const runAgent = async ({
   userMessage,
@@ -12,22 +13,33 @@ export const runAgent = async ({
   await addMessages([{ role: 'user', content: userMessage }])
 
   const loader = showLoader('Thinking...')
-  const history = await getMessages()
 
-  const response = await runLLM({
-    messages: history,
-    tools,
-  })
+  while (true) {
+    const history = await getMessages()
+    const response = await runLLM({
+      messages: history,
+      tools,
+    })
 
-  if (response.tool_calls) {
-    // Handle tool calls
-    console.log(response.tool_calls)
+    await addMessages([response])
+
+    logMessage(response)
+
+    if (response.content) {
+      loader.stop()
+      return getMessages()
+    }
+
+    if (response.tool_calls) {
+      // Handle tool calls
+      const toolCall = response.tool_calls[0]
+
+      loader.update(`Executing: ${toolCall.function.name}`)
+
+      const toolResult = await runTool(toolCall, userMessage)
+      await saveToolResponse(toolCall.id, toolResult)
+
+      loader.update(`Executed : ${toolCall.function.name}`)
+    }
   }
-
-  await addMessages([response])
-
-  logMessage(response)
-  loader.stop()
-
-  return getMessages()
 }
