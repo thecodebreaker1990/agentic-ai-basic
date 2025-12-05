@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { runAgent } from './src/agent'
+import { tools } from './src/tools'
 import { z } from 'zod'
 
 const userMessage = process.argv[2]
@@ -19,5 +20,5 @@ const weatherTool = {
 
 await runAgent({
   userMessage,
-  tools: [weatherTool],
+  tools: [weatherTool, ...tools],
 })
