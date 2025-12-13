@@ -1,4 +1,5 @@
 import type OpenAI from 'openai'
+import { generateImage } from './tools/generateImage'
 import { reddit } from './tools/reddit'
 import { dadJoke } from './tools/dadJoke'
 
@@ -13,6 +14,10 @@ export const runTool = async (
     toolArgs: JSON.parse(toolCall.function.arguments || '{}'),
   }
   switch (toolCall.function.name) {
+    case 'generate_image':
+      const image = await generateImage(input)
+      return image
+
     case 'dad_joke':
       return dadJoke(input)
 
